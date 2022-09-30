@@ -1,23 +1,37 @@
 package com.example.cd2
 
-import android.app.PendingIntent.getActivity
+import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.BroadcastReceiver
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import android.view.View
+import android.widget.Toast
 
 
 class MainActivity : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-//        val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
-//        startActivity(intent);
+
+        // See if the user has not granted permission to read his or her text messages
+
+
+        // request permission 은 오직 한 번만
+        // See if the user has not granted permission to read his or her text messages
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_DENIED) {
+            // Request the user to grant permission to read SMS messages
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO,Manifest.permission.READ_SMS), 2);
+            System.out.println("Permission Denied")
+        }
+
+
 
 
     }

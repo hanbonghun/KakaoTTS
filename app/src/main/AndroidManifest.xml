@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
-<!--    BLUETOOTH : 블루투스 연결 요청, 연결 수락 및 데이터 전송과 같은 블루투스 통신을 수행하기 위해 선언-->
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-<!--    BLUETOOTH_ADMIN : 블루투스 설정 조작 및 앱에서 기기를 검색하기 위해 선언-->
-    <!-- If your app targets Android 9 or lower, you can declare
-     ACCESS_COARSE_LOCATION instead. -->
+
+    <uses-permission android:name="android.permission.BLUETOOTH" /> <!-- BLUETOOTH : 블루투스 연결 요청, 연결 수락 및 데이터 전송과 같은 블루투스 통신을 수행하기 위해 선언 -->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" /> <!-- BLUETOOTH_ADMIN : 블루투스 설정 조작 및 앱에서 기기를 검색하기 위해 선언 -->
+    <uses-permission android:name="android.permission.READ_SMS"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <!-- SMS 권한 허용 -->
+
+
+
+    <!--
+ If your app targets Android 9 or lower, you can declare
+     ACCESS_COARSE_LOCATION instead.
+    -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
@@ -21,6 +28,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CD2"
         tools:targetApi="31">
+        <receiver
+            android:name=".SmsBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true"></receiver>
+        <receiver
+            android:name=".BluetoothBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true" />
+
         <activity
             android:name=".IntroActivity"
             android:exported="true">
@@ -29,6 +45,7 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
@@ -36,8 +53,6 @@
         <activity
             android:name=".MainActivity"
             android:exported="true">
-
-
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
