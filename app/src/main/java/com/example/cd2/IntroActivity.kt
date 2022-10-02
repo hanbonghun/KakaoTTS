@@ -1,8 +1,11 @@
 package com.example.cd2
 
+import android.app.NotificationManager
+import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.content.Intent
+import android.os.Build
 import android.os.Handler
 
 
@@ -16,10 +19,5 @@ class IntroActivity : AppCompatActivity() {
             var intent = Intent( this, MainActivity::class.java)
             startActivity(intent)
         }, 1000)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        finish()
     }
 }
