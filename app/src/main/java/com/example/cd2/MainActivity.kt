@@ -2,73 +2,89 @@ package com.example.cd2
 
 import android.Manifest
 import android.app.NotificationManager
-import android.content.ActivityNotFoundException
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.content.*
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.support.annotation.RequiresApi
 import android.support.v4.app.ActivityCompat
-import android.support.v4.app.NotificationManagerCompat
 import android.support.v7.app.AppCompatActivity
-import android.text.TextUtils
 import android.view.View
+import android.widget.TextView
+import android.widget.Toast
+import android.widget.ToggleButton
 
 
 class MainActivity : AppCompatActivity() {
 
-    private fun isNotificationServiceEnabled(c: Context): Boolean {
-        val pkgName: String = c.getPackageName()
-        val flat = Settings.Secure.getString(
-            c.getContentResolver(),
-            "enabled_notification_listeners"
-        )
-        if (!TextUtils.isEmpty(flat)) {
-            val names = flat.split(":").toTypedArray()
-            for (i in names.indices) {
-                val cn = ComponentName.unflattenFromString(names[i])
-                if (cn != null) {
-                    if (TextUtils.equals(pkgName, cn.packageName)) {
-                        return true
-                    }
+    val bluetoothBroadcastReceiver = object : BroadcastReceiver() {
+        @RequiresApi(Build.VERSION_CODES.M)
+        override fun onReceive(contxt: Context?, intent: Intent?) {
+            val bleOnOffBtn:ToggleButton = findViewById(R.id.bluetooth_on_off_btn)
+
+            var action = intent?.getAction()
+
+            if(action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+                var state =
+                    intent?.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+                if (state == BluetoothAdapter.STATE_OFF) {
+                    System.out.println("블루투스 off")
+                    bleOnOffBtn.isChecked = false
+
+                }else if  (state == BluetoothAdapter.STATE_ON){
+                    System.out.println("블루투스 on")
+                    bleOnOffBtn.isChecked = true
                 }
             }
+            if(BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)){
+                val device: BluetoothDevice? = intent?.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE) //연결된 장치
+                bleOnOffBtn.isChecked = true
+                var bleDeviceTextView : TextView= findViewById(R.id.connectedDevice)
+                    bleDeviceTextView.setText("connected")
+                Toast.makeText(
+                    baseContext,
+                    "Device is now Connected",
+                    Toast.LENGTH_SHORT
+                ).show()
+                System.out.println(device)
+            }else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
+                bleOnOffBtn.isChecked = false
+
+                System.out.println("해제")
+                Toast.makeText(
+                    baseContext,
+                    "Device is disconnected",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
-        return false
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        //알림 접근 허용
-//        val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-//        if(Build.VERSION.SDK_INT >= 23){
-//            if(!notificationManager.isNotificationPolicyAccessGranted){
-//                this.startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-//            }
-//        }
 
-//        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-//            startActivity(intent)
+        val filter = IntentFilter().apply{
+            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+            addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
+        }
+        registerReceiver(bluetoothBroadcastReceiver,filter)
 
-
-        // See if the user has not granted permission to read his or her text messages
+    }
 
 
-        // request permission 은 오직 한 번만
-//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_DENIED) {
-//            // Request the user to grant permission to read SMS messages
-//            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO,Manifest.permission.READ_SMS), 2);
-//            System.out.println("Permission Denied")
-//        }
-        // See if the user has not granted permission to read his or her text messages
-
-
-
-
+    fun isBluetoothEnabled(): Boolean {
+        val myBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        if(myBluetoothAdapter.isEnabled()){
+            return true
+        }else{
+            return false
+        }
     }
 
     //블루투스 연결 설정 버튼 클릭 시
@@ -92,19 +108,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStart() {
+
         super.onStart()
+
         val notificationManager = this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if(Build.VERSION.SDK_INT >= 23){
             if(!notificationManager.isNotificationPolicyAccessGranted){ //알림 접근 권한이 허용 여부 확인
                 this.startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
             }else{
 //      request permission 은 오직 한 번만
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_DENIED) {
-            // Request the user to grant permission to read SMS messages
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_SMS), 2);
-        }
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_DENIED||ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_DENIED) {
+                    // Request the user to grant permission to read SMS messages
+                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_SMS,Manifest.permission.BLUETOOTH_CONNECT), 2);
+                }
+
             }
         }
     }
+
 
 }
