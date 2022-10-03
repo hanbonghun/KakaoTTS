@@ -120,7 +120,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:onClick="onClickBluetoothBtn"
-                    android:text="Button" />
+                    android:text="설정" />
             </LinearLayout>
 
             <LinearLayout
@@ -135,12 +135,14 @@
                     android:layout_weight="1"
                     android:text="현재 상태" />
 
-                <Button
-                    android:id="@+id/button3"
+                <ToggleButton
+                    android:id="@+id/bluetooth_on_off_btn"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Button" />
+                    android:enabled="false"
+                    android:textColor="@color/black"
+                    android:text="ToggleButton" />
 
             </LinearLayout>
 

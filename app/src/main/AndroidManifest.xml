@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.BLUETOOTH" /> <!-- BLUETOOTH : 블루투스 연결 요청, 연결 수락 및 데이터 전송과 같은 블루투스 통신을 수행하기 위해 선언 -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" /> <!-- BLUETOOTH_ADMIN : 블루투스 설정 조작 및 앱에서 기기를 검색하기 위해 선언 -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" /> <!-- SMS 권한 허용 -->
@@ -13,7 +14,6 @@
     -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
     <application
         android:allowBackup="true"
