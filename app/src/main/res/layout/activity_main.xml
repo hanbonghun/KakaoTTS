@@ -162,8 +162,7 @@
                     android:id="@+id/connectedDevice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="TextView" />
+                    android:layout_weight="1" />
             </LinearLayout>
         </LinearLayout>
 
@@ -192,7 +191,7 @@
                     android:text="볼륨" />
 
                 <SeekBar
-                    android:id="@+id/seekBar3"
+                    android:id="@+id/volumeSeeBar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1" />
