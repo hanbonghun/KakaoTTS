@@ -12,7 +12,6 @@ import android.os.Bundle
 import android.provider.Settings
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
-import android.view.KeyEvent
 import android.view.View
 import android.widget.*
 import android.widget.SeekBar.OnSeekBarChangeListener
@@ -34,7 +33,6 @@ class MainActivity : AppCompatActivity() {
 //    }
 
     var speedRate:Float = 1.0F
-
 
     //블루투스 리시버
     //http://jinyongjeong.github.io/2018/09/27/bluetoothpairing/
@@ -114,10 +112,32 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val sharedPreference = getSharedPreferences("functionOnOff", MODE_PRIVATE ) //기능 사용 on off
+        // SharedPreference : 스토리지 파일에 key-value쌍으로 저장하여 다른 액티비티에서도 사용할 수 있음
+        val editor = sharedPreference.edit()
+        editor.putInt("onOff",1) // 최초 기능 사용 on 으로 설정
+        editor.commit() //commit 까지해야 반영
+
         val audioManager = this.applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val volumeSeekBar:SeekBar = findViewById(R.id.volumeSeeBar)
         var currentVolume =audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)  //현재 음량
         var maxVolume =audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+
+        var functionSwitch :Switch = findViewById(R.id.function_on_off)
+        functionSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+            if (isChecked) {
+                System.out.println("스위치 on")
+                editor.putInt("onOff",1)
+                editor.commit()
+            } else {
+                System.out.println("스위치 off")
+                editor.putInt("onOff",0)
+                editor.commit()
+
+            }
+        }
+
+
 
         volumeSeekBar.max =maxVolume
         volumeSeekBar.progress = currentVolume
@@ -193,6 +213,7 @@ class MainActivity : AppCompatActivity() {
 //        }
 //        return super.onKeyDown(keyCode, event)
 //    }
+
 
 
     //TODO: 한번켜지면 꺼지지 않음
