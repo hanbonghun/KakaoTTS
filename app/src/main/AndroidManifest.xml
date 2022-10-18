@@ -36,15 +36,6 @@
             </intent-filter>
         </service>
 
-        <receiver
-            android:name=".SmsBroadcastReceiver"
-            android:enabled="true"
-            android:exported="true" />
-        <receiver
-            android:name=".BluetoothBroadcastReceiver"
-            android:enabled="true"
-            android:exported="true" />
-
         <activity
             android:name=".IntroActivity"
             android:exported="true">
