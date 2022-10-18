@@ -6,11 +6,9 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.content.*
 import android.content.pm.PackageManager
-import android.database.ContentObserver
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
 import android.provider.Settings
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
@@ -22,6 +20,7 @@ class MainActivity : AppCompatActivity() {
 
     var speedRate:Float = 1.0F
 
+    // SharedPreference : 스토리지 파일에 key-value쌍으로 저장하여 다른 액티비티에서도 사용할 수 있음
     //블루투스 리시버
     //http://jinyongjeong.github.io/2018/09/27/bluetoothpairing/
     //https://jung-max.github.io/2019/08/27/Android-Bluetooth/
@@ -42,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    //FIXME : 블루투스 기기 연결된 상태로 앱 켰을 때 출력 안되는 것 수정해야함
     private val bluetoothChangeReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(contxt: Context?, intent: Intent?) {
@@ -124,15 +124,25 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // SharedPreference : 스토리지 파일에 key-value쌍으로 저장하여 다른 액티비티에서도 사용할 수 있음
-        val sharedPreference = getSharedPreferences("functionOnOff", MODE_PRIVATE ) //기능 사용 on off 를 위한 변수
+        val sharedPreference = getSharedPreferences("userSetting", MODE_PRIVATE ) //기능 사용 on off 를 위한 변수
         val editor = sharedPreference.edit() // SharedPreference 수정을 위한 변수
-        editor.putInt("onOff",1) // 최초 기능 사용 on 으로 설정
+
+        editor.putString("func","ON") // 최초 기능 사용 on 으로 설정
+        editor.putString("from","ON") // 발신자 on 으로 설정
+        editor.putString("time","ON") // 시간 on 으로 설정
+        editor.putString("content","ON") // 내용 on 으로 설정
+
         editor.commit() //commit 까지해야 반영
 
         val audioManager = this.applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         var currentVolume =audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)  //현재 음량
         var maxVolume =audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        var functionSwitch :Switch = findViewById(R.id.function_on_off)
+
+        var funcOnOff : Switch = findViewById(R.id.func_on_off)
+        var fromOnOff : Switch = findViewById(R.id.from_on_off)
+        var timeOnOff  : Switch= findViewById(R.id.time_on_off)
+        var contentOnOff : Switch = findViewById(R.id.content_on_off)
+
 
         val volumeSeekBar:SeekBar = findViewById(R.id.volumeSeeBar)
         volumeSeekBar.max =maxVolume
@@ -150,13 +160,45 @@ class MainActivity : AppCompatActivity() {
             addAction("android.media.VOLUME_CHANGED_ACTION")
         }
 
-        functionSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+        //TODO:
+        //TODO: 반복 제거
+        funcOnOff.setOnCheckedChangeListener { buttonView, isChecked ->
             if (isChecked) {
                 System.out.println("스위치 on")
-                editor.putInt("onOff",1)
+                editor.putString("func","ON")
             } else {
                 System.out.println("스위치 off")
-                editor.putInt("onOff",0)
+                editor.putString("func","OFF")
+            }
+            editor.commit()
+        }
+        fromOnOff.setOnCheckedChangeListener { buttonView, isChecked ->
+            if (isChecked) {
+                System.out.println("스위치 on")
+                editor.putString("from","ON")
+            } else {
+                System.out.println("스위치 off")
+                editor.putString("from","OFF")
+            }
+            editor.commit()
+        }
+        timeOnOff.setOnCheckedChangeListener { buttonView, isChecked ->
+            if (isChecked) {
+                System.out.println("스위치 on")
+                editor.putString("time","ON")
+            } else {
+                System.out.println("스위치 off")
+                editor.putString("time","OFF")
+            }
+            editor.commit()
+        }
+        contentOnOff.setOnCheckedChangeListener { buttonView, isChecked ->
+            if (isChecked) {
+                System.out.println("스위치 on")
+                editor.putString("content","ON")
+            } else {
+                System.out.println("스위치 off")
+                editor.putString("content","OFF")
             }
             editor.commit()
         }
@@ -188,6 +230,7 @@ class MainActivity : AppCompatActivity() {
 //        )
 
     }
+
 
     private fun initSpeedRateSpinner(){
         val speedList:Array<Float> = arrayOf(1.0F,2.0F,3.0F)
