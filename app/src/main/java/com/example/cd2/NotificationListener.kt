@@ -1,30 +1,39 @@
 package com.example.cd2
 
 import android.app.Notification
-import android.app.Service
-import android.content.Intent
+import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
-import android.os.IBinder
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.widget.Toast
-import org.w3c.dom.Text
-import java.text.SimpleDateFormat
 import java.util.*
+
 
 class NotificationListener : NotificationListenerService() {
 
     private var tts: TextToSpeech? =null
+    var sharedPreference: SharedPreferences? = null
 
 
+    override fun onCreate() {
+        super.onCreate()
+        sharedPreference = getSharedPreferences("functionOnOff", MODE_PRIVATE);
+
+    }
     override fun onListenerConnected() {
         super.onListenerConnected()
         initTextToSpeech()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
+        val state = sharedPreference?.getInt("onOff",-999)
+        if(state == 0) {
+            System.out.println("기능 사용 꺼져있음, 음성 출력 x ")
+            return
+        }
         Log.i("NotificationListener", " onNotificationPosted() - $sbn")
         Log.i("NotificationListener", " PackageName:" + sbn.packageName)
         Log.i("NotificationListener", " PostTime:" + sbn.postTime)
