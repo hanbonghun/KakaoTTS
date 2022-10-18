@@ -1,13 +1,15 @@
 package com.example.cd2
 
 import android.app.Notification
-import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.speech.tts.TextToSpeech
+import android.support.v4.content.LocalBroadcastManager
 import android.util.Log
+import android.view.LayoutInflater
 import android.widget.Toast
 import java.util.*
 
@@ -17,10 +19,9 @@ class NotificationListener : NotificationListenerService() {
     private var tts: TextToSpeech? =null
     var sharedPreference: SharedPreferences? = null
 
-
     override fun onCreate() {
         super.onCreate()
-        sharedPreference = getSharedPreferences("functionOnOff", MODE_PRIVATE);
+        sharedPreference = getSharedPreferences("userSetting", MODE_PRIVATE);
 
     }
     override fun onListenerConnected() {
@@ -28,20 +29,35 @@ class NotificationListener : NotificationListenerService() {
         initTextToSpeech()
     }
 
+    //TODO: 각 기능 on off state에 따라 음성 출력값 다르게
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        val state = sharedPreference?.getInt("onOff",-999)
-        if(state == 0) {
-            System.out.println("기능 사용 꺼져있음, 음성 출력 x ")
-            return
-        }
-        Log.i("NotificationListener", " onNotificationPosted() - $sbn")
-        Log.i("NotificationListener", " PackageName:" + sbn.packageName)
-        Log.i("NotificationListener", " PostTime:" + sbn.postTime)
+
         val notification: Notification = sbn.notification
         val extras: Bundle = notification.extras
         val title= extras.getString(Notification.EXTRA_TITLE)
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)
         val subText = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)
+
+        //각 기능 on off 값을 변수에 저장함
+        // "ON" => 사용  , "OFF" => 미사용
+        val funcState = sharedPreference?.getString("func","none")   // none은 func에 해당하는 값이 없을 때 default
+        val fromState = sharedPreference?.getString("from","none")
+        val timeState = sharedPreference?.getString("time","none")
+        val contentState = sharedPreference?.getString("content","none")
+
+        if(funcState == "OFF") {
+            System.out.println("기능 사용 꺼져있음, 음성 출력 x ")
+            return
+        }
+
+        System.out.println("기능" +funcState)
+        System.out.println("발신자"+fromState)
+        System.out.println("타임"+timeState)
+        System.out.println("컨텐츠"+contentState)
+
+        Log.i("NotificationListener", " onNotificationPosted() - $sbn")
+        Log.i("NotificationListener", " PackageName:" + sbn.packageName)
+        Log.i("NotificationListener", " PostTime:" + sbn.postTime)
         Log.i("NotificationListener", " Title:$title")
         Log.i("NotificationListener", " Text:$text")
         Log.i("NotificationListener", "Sub Text:$subText")
