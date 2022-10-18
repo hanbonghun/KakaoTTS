@@ -36,10 +36,11 @@
                     android:text="기능 사용하기" />
 
                 <Switch
-                    android:id="@+id/switch1"
+                    android:id="@+id/function_on_off"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                  android:checked="true"
                     android:text="Switch" />
 
             </LinearLayout>
