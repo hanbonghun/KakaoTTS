@@ -6,9 +6,11 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.content.*
 import android.content.pm.PackageManager
+import android.database.ContentObserver
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.provider.Settings
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
@@ -16,36 +18,42 @@ import android.view.View
 import android.widget.*
 import android.widget.SeekBar.OnSeekBarChangeListener
 
-
 class MainActivity : AppCompatActivity() {
-
-//    var volumeBroadcastReceiver = object: BroadcastReceiver(){
-//        override fun onReceive(p0: Context?, p1: Intent?) {
-//            var action = intent?.getAction()
-//
-//            if (action != null) {
-//                if(action.equals("android.media.VOLUME_CHANGED_ACTION")){
-//                    System.out.println("volume changed")
-//                }
-//
-//            }
-//        }
-//    }
 
     var speedRate:Float = 1.0F
 
     //블루투스 리시버
     //http://jinyongjeong.github.io/2018/09/27/bluetoothpairing/
     //https://jung-max.github.io/2019/08/27/Android-Bluetooth/
-    private val bluetoothBroadcastReceiver = object : BroadcastReceiver() {
+
+
+    private val volumeChangeReceiver = object: BroadcastReceiver(){
+
+        override fun onReceive(contxt: Context?, intent: Intent?) {
+            val volumeSeekBar: SeekBar = findViewById(R.id.volumeSeeBar)
+
+            var action = intent?.action //입력된 action
+
+            if(action.equals("android.media.VOLUME_CHANGED_ACTION")) {
+                val audio = getSystemService(AppCompatActivity.AUDIO_SERVICE) as AudioManager
+                val currentVolume = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+                volumeSeekBar.progress=currentVolume
+            }
+        }
+    }
+
+    private val bluetoothChangeReceiver = object : BroadcastReceiver() {
+
         override fun onReceive(contxt: Context?, intent: Intent?) {
             val bleOnOffBtn:ToggleButton = findViewById(R.id.bluetooth_on_off_btn)
 
             var action = intent?.action //입력된 action
 
+            //블루투스 on/off 변화
             if(action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
                 var state =
                     intent?.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
+
                 if (state == BluetoothAdapter.STATE_OFF) {
                     System.out.println("블루투스 off")
                     bleOnOffBtn.isChecked = false
@@ -55,11 +63,14 @@ class MainActivity : AppCompatActivity() {
                     bleOnOffBtn.isChecked = true
                 }
             }
-            if(BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)){
-                val device: BluetoothDevice? = intent?.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE) //연결된 장치
 
+            //블루투스 연결 장치 변화
+            if(BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)){
                 bleOnOffBtn.isChecked = true
+
+                val device: BluetoothDevice? = intent?.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE) //연결된 장치
                 var bleDeviceTextView : TextView= findViewById(R.id.connectedDevice)
+
                 if (ActivityCompat.checkSelfPermission(
                         this@MainActivity,
                         Manifest.permission.BLUETOOTH_CONNECT
@@ -112,35 +123,44 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val sharedPreference = getSharedPreferences("functionOnOff", MODE_PRIVATE ) //기능 사용 on off
         // SharedPreference : 스토리지 파일에 key-value쌍으로 저장하여 다른 액티비티에서도 사용할 수 있음
-        val editor = sharedPreference.edit()
+        val sharedPreference = getSharedPreferences("functionOnOff", MODE_PRIVATE ) //기능 사용 on off 를 위한 변수
+        val editor = sharedPreference.edit() // SharedPreference 수정을 위한 변수
         editor.putInt("onOff",1) // 최초 기능 사용 on 으로 설정
         editor.commit() //commit 까지해야 반영
 
         val audioManager = this.applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val volumeSeekBar:SeekBar = findViewById(R.id.volumeSeeBar)
         var currentVolume =audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)  //현재 음량
         var maxVolume =audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-
         var functionSwitch :Switch = findViewById(R.id.function_on_off)
+
+        val volumeSeekBar:SeekBar = findViewById(R.id.volumeSeeBar)
+        volumeSeekBar.max =maxVolume
+        volumeSeekBar.progress = currentVolume
+
+        val bluetoothFilter = IntentFilter().apply{
+            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)//블루투스상태변화액션
+            addAction(BluetoothDevice.ACTION_ACL_CONNECTED)//연결확인
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)//
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)//연결끊김확인
+        }
+
+        var volumeFilter =IntentFilter().apply {
+            addAction("android.media.EXTRA_VOLUME_STREAM_TYPE")
+            addAction("android.media.VOLUME_CHANGED_ACTION")
+        }
+
         functionSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
             if (isChecked) {
                 System.out.println("스위치 on")
                 editor.putInt("onOff",1)
-                editor.commit()
             } else {
                 System.out.println("스위치 off")
                 editor.putInt("onOff",0)
-                editor.commit()
-
             }
+            editor.commit()
         }
 
-
-
-        volumeSeekBar.max =maxVolume
-        volumeSeekBar.progress = currentVolume
 
         volumeSeekBar.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
@@ -152,18 +172,20 @@ class MainActivity : AppCompatActivity() {
         })
 
 
-        //다른 어플이나 application에서 broadcast하는 메시지를 받을 수 있도록 설정
-        val filter = IntentFilter().apply{
-            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)//블루투스상태변화액션
-            addAction(BluetoothDevice.ACTION_ACL_CONNECTED)//연결확인
-            addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)//
-            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)//연결끊김확인
-        }
-        registerReceiver(bluetoothBroadcastReceiver,filter)//reiver와 filter연결
+        registerReceiver(bluetoothChangeReceiver,bluetoothFilter)//reiver와 filter연결
+        registerReceiver(volumeChangeReceiver,volumeFilter)
+
 
         //https://www.geeksforgeeks.org/spinner-in-kotlin/
         initSpeedRateSpinner()
 
+        //볼륨 변화 감지를 위해 contentobserver를 사용할 수 있음
+//        var mSettingsContentObserver = SettingsContentObserver(this, Handler(),this)
+//        applicationContext.contentResolver.registerContentObserver(
+//            Settings.System.CONTENT_URI,
+//            true,
+//            mSettingsContentObserver
+//        )
 
     }
 
