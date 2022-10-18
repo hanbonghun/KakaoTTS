@@ -36,12 +36,13 @@
                     android:text="기능 사용하기" />
 
                 <Switch
-                    android:id="@+id/function_on_off"
+                    android:id="@+id/func_on_off"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:layout_weight="1"
-                  android:checked="true"
-                    android:text="Switch" />
+                    android:checked="true"
+                    android:textAlignment="gravity" />
 
             </LinearLayout>
 
@@ -91,8 +92,7 @@
                     android:id="@+id/switch2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Switch" />
+                    android:layout_weight="1" />
             </LinearLayout>
 
         </LinearLayout>
@@ -142,8 +142,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:enabled="false"
-                    android:textColor="@color/black"
-                    android:text="ToggleButton" />
+                    android:text="ToggleButton"
+                    android:textColor="@color/black" />
 
             </LinearLayout>
 
@@ -280,8 +280,7 @@
                     android:id="@+id/switch3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Switch" />
+                    android:layout_weight="1" />
             </LinearLayout>
         </LinearLayout>
 
@@ -310,11 +309,12 @@
                     android:text="발신자" />
 
                 <Switch
-                    android:id="@+id/switch6"
+                    android:id="@+id/from_on_off"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Switch" />
+                    android:checked="true"
+                    />
             </LinearLayout>
 
             <LinearLayout
@@ -330,11 +330,12 @@
                     android:text="발신 내용" />
 
                 <Switch
-                    android:id="@+id/switch5"
+                    android:id="@+id/content_on_off"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Switch" />
+                    android:checked="true"
+                    />
             </LinearLayout>
 
             <LinearLayout
@@ -350,11 +351,12 @@
                     android:text="발신 시간" />
 
                 <Switch
-                    android:id="@+id/switch4"
+                    android:id="@+id/time_on_off"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Switch" />
+                    android:checked="true"
+                    />
             </LinearLayout>
         </LinearLayout>
 
