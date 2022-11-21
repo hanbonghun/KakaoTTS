@@ -2,7 +2,7 @@ package com.example.cd2
 
 import android.app.NotificationManager
 import android.content.Context
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.content.Intent
 import android.os.Build
@@ -16,7 +16,7 @@ class IntroActivity : AppCompatActivity() {
 
         var handler = Handler()
         handler.postDelayed( {
-            var intent = Intent( this, MainActivity::class.java)
+            var intent = Intent( this, LoginActivity::class.java)
             startActivity(intent)
         }, 1000)
     }
