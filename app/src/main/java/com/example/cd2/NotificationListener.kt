@@ -1,16 +1,27 @@
 package com.example.cd2
 
 import android.app.Notification
+import android.content.ContentValues.TAG
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
-import android.support.v4.content.LocalBroadcastManager
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
-import android.view.LayoutInflater
 import android.widget.Toast
+import com.kakao.sdk.common.KakaoSdk
+import com.kakao.sdk.share.ShareClient
+import com.kakao.sdk.talk.TalkApiClient
+import com.kakao.sdk.template.model.*
+import com.kakao.sdk.user.UserApiClient
 import java.util.*
 
 
@@ -18,7 +29,7 @@ class NotificationListener : NotificationListenerService() {
 
     private var tts: TextToSpeech? =null
     var sharedPreference: SharedPreferences? = null
-
+    var STTResult :String =""
     override fun onCreate() {
         super.onCreate()
         sharedPreference = getSharedPreferences("userSetting", MODE_PRIVATE);
@@ -82,7 +93,7 @@ class NotificationListener : NotificationListenerService() {
             if(title.toString() == "나"){
                 return
             }
-            speakTTS(title.toString())
+           // speakTTS(title.toString())
         }
         if(text != null){
             // 카카오톡 방 내용
@@ -96,7 +107,12 @@ class NotificationListener : NotificationListenerService() {
                 t.substring(20)
                 t += "   이상입니다."
             }
+
+            t+="....답장을 원하시면 내용을 말씀하세요"
             speakTTS(t)
+            startSTT()
+
+
         }
         //if(subText != null)speakTTS(subText.toString()) // "4개의 안읽은 메시지"
 
@@ -108,20 +124,160 @@ class NotificationListener : NotificationListenerService() {
 
     }
 
+    private  fun startSTT() {
+        while(tts?.isSpeaking == true){
+        }
+        val speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        }
+
+        var speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+            setRecognitionListener(recognitionListener())
+            startListening(speechRecognizerIntent)
+        }
+
+    }
+
+    private fun recognitionListener() = object : RecognitionListener {
+
+        override fun onReadyForSpeech(params: Bundle?) = Toast.makeText(this@NotificationListener, "음성인식 시작", Toast.LENGTH_SHORT).show()
+
+        override fun onRmsChanged(rmsdB: Float) {}
+
+        override fun onBufferReceived(buffer: ByteArray?) {}
+
+        override fun onPartialResults(partialResults: Bundle?) {}
+
+        override fun onEvent(eventType: Int, params: Bundle?) {}
+
+        override fun onBeginningOfSpeech() {
+
+        }
+
+        override fun onEndOfSpeech() {
+
+        }
+
+        override fun onError(error: Int) {
+            when(error) {
+                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> Toast.makeText(this@NotificationListener, "퍼미션 없음", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        override fun onResults(results: Bundle) {
+
+
+            Toast.makeText(this@NotificationListener, results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)!![0], Toast.LENGTH_SHORT).show()
+            STTResult =results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)!![0]
+
+
+            val text = TextTemplate(
+                text = STTResult.trimIndent(),
+                link = Link(
+                    webUrl = "https://developers.kakao.com",
+                    mobileWebUrl = "https://developers.kakao.com"
+                )
+            )
+
+//            if (ShareClient.instance.isKakaoTalkSharingAvailable(this@NotificationListener)) {
+//                // 카카오톡으로 카카오톡 공유 가능
+//                ShareClient.instance.shareDefault(this@NotificationListener, text) { sharingResult, error ->
+//                    if (error != null) {
+//                        Log.e(TAG, "카카오톡 공유 실패", error)
+//                    }
+//                    else if (sharingResult != null) {
+//
+//                        Log.d(TAG, "카카오톡 공유 성공 ${sharingResult.intent}")
+//                        startActivity(sharingResult.intent)
+//
+//                        // 카카오톡 공유에 성공했지만 아래 경고 메시지가 존재할 경우 일부 컨텐츠가 정상 동작하지 않을 수 있습니다.
+//                        Log.w(TAG, "Warning Msg: ${sharingResult.warningMsg}")
+//                        Log.w(TAG, "Argument Msg: ${sharingResult.argumentMsg}")
+//                    }
+//                }
+//            }
+            TalkApiClient.instance.friends { friends, error ->
+                if (error != null) {
+                    Log.e(TAG, "카카오톡 친구 목록 가져오기 실패", error)
+                }
+                else {
+                    Log.d(TAG, "카카오톡 친구 목록 가져오기 성공 \n${friends!!.elements?.joinToString("\n")}")
+
+                    if (friends.elements?.isEmpty() == true) {
+                        Log.e(TAG, "메시지를 보낼 수 있는 친구가 없습니다")
+                    }
+                    else {
+                        System.out.println(friends.elements);
+                        var receiverUuid = friends.elements?.get(0)?.uuid
+                        var receiverUuids: List<String> = listOf(receiverUuid) as List<String>
+                        var template =text
+
+                        TalkApiClient.instance.sendDefaultMessage(receiverUuids, template) { result, error ->
+                                if (error != null) {
+                                    Log.e(TAG, "메시지 보내기 실패", error)
+                                }
+                                else if (result != null) {
+                                    Log.i(TAG, "메시지 보내기 성공 ${result.successfulReceiverUuids}")
+
+                                    if (result.failureInfos != null) {
+                                        Log.d(TAG, "메시지 보내기에 일부 성공했으나, 일부 대상에게는 실패 \n${result.failureInfos}")
+                                    }
+                                }
+                            }
+
+                        // 서비스에 상황에 맞게 메시지 보낼 친구의 UUID를 가져오세요.
+                        // 이 예제에서는 친구 목록을 화면에 보여주고 체크박스로 선택된 친구들의 UUID 를 수집하도록 구현했습니다.
+//                        FriendsActivity.startForResult(
+//                            context,
+//                            friends.elements.map { PickerItem(it.uuid, it.profileNickname, it.profileThumbnailImage) }
+//                        ) { selectedItems ->
+//                            if (selectedItems.isEmpty()) return@startForResult
+//                            Log.d(TAG, "선택된 친구:\n${selectedItems.joinToString("\n")}")
+//
+//
+//                            // 메시지 보낼 친구의 UUID 목록
+//                            val receiverUuids = selectedItems
+//
+//                            // Feed 메시지
+//                            val template = defaultFeed
+//
+//                            // 메시지 보내기
+//                            TalkApiClient.instance.sendDefaultMessage(receiverUuids, template) { result, error ->
+//                                if (error != null) {
+//                                    Log.e(TAG, "메시지 보내기 실패", error)
+//                                }
+//                                else if (result != null) {
+//                                    Log.i(TAG, "메시지 보내기 성공 ${result.successfulReceiverUuids}")
+//
+//                                    if (result.failureInfos != null) {
+//                                        Log.d(TAG, "메시지 보내기에 일부 성공했으나, 일부 대상에게는 실패 \n${result.failureInfos}")
+//                                    }
+//                                }
+//                            }
+//                        }
+                    }
+                }
+            }
+
+        }
+    }
     private fun initTextToSpeech() {
-
-
-
         tts = TextToSpeech(this) {
             if (it == TextToSpeech.SUCCESS) {
+
                 val result = tts?.setLanguage(Locale.KOREA)
                 if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                     Toast.makeText(this, "language not supported", Toast.LENGTH_SHORT).show()
                     return@TextToSpeech
                 }
 
+
             }
+
+
         }
+
 
         //TODO: change TTS Engine
         //https://stackoverflow.com/questions/7362534/how-to-programmatically-change-tts-default-engine
