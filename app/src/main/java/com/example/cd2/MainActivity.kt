@@ -1,6 +1,7 @@
 package com.example.cd2
 
 import android.Manifest
+import android.app.Application
 import android.app.NotificationManager
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -10,11 +11,14 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.support.v4.app.ActivityCompat
-import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.view.View
 import android.widget.*
 import android.widget.SeekBar.OnSeekBarChangeListener
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import com.kakao.sdk.common.KakaoSdk
+import com.kakao.sdk.common.util.Utility
 
 class MainActivity : AppCompatActivity() {
 
@@ -120,6 +124,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        class GlobalApplication : Application() {
+            override fun onCreate() {
+                super.onCreate()
+                // 다른 초기화 코드들
+
+                // Kakao SDK 초기화
+                KakaoSdk.init(this, "c6665fea06ab37e4e6400f7df2bfe9c0")
+            }
+        }
+        var keyHash = Utility.getKeyHash(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -325,7 +339,7 @@ class MainActivity : AppCompatActivity() {
                 //request permission 은 오직 한 번만
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_DENIED||ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_DENIED) {
                     // Request the user to grant permission to read SMS messages
-                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_SMS,Manifest.permission.BLUETOOTH_CONNECT), 2)
+                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_SMS,Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.RECORD_AUDIO), 2)
                 }
 
             }
@@ -347,8 +361,6 @@ class MainActivity : AppCompatActivity() {
 
         volumeSeekBar.max =maxVolume
         volumeSeekBar.progress = currentVolume
-
-        //TODO: 핸드폰 옆의 볼륨을 높힐때 바로 media 볼륨이 잡히지 않는다
 
 
     }
