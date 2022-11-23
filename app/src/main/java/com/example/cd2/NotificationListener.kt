@@ -22,6 +22,7 @@ import com.kakao.sdk.share.ShareClient
 import com.kakao.sdk.talk.TalkApiClient
 import com.kakao.sdk.template.model.*
 import com.kakao.sdk.user.UserApiClient
+import java.text.SimpleDateFormat
 import java.util.*
 
 
@@ -55,6 +56,7 @@ class NotificationListener : NotificationListenerService() {
         val fromState = sharedPreference?.getString("from","none")
         val timeState = sharedPreference?.getString("time","none")
         val contentState = sharedPreference?.getString("content","none")
+        val speedRate = sharedPreference?.getFloat("speed",1.0F)
 
         if(funcState == "OFF") {
             System.out.println("기능 사용 꺼져있음, 음성 출력 x ")
@@ -83,9 +85,11 @@ class NotificationListener : NotificationListenerService() {
         if(sbn.packageName != "com.kakao.talk" && sbn.packageName.indexOf("messaging") == -1) return
 
         //TODO: application의 speedRate와 연결하기
-        tts?.setSpeechRate(1.0F)//1.0기본 float
+        if (speedRate != null) {
+            tts?.setSpeechRate(speedRate)
+        }//1.0기본 float
 
-
+        var t =""
         if(title != null){
             // title: 카카오톡방이름
             //이모티콘(유니코드)무시 필요?
@@ -93,27 +97,40 @@ class NotificationListener : NotificationListenerService() {
             if(title.toString() == "나"){
                 return
             }
-           // speakTTS(title.toString())
-        }
-        if(text != null){
-            // 카카오톡 방 내용
-            //TODO: 사진, 동영상, 파일 무시 필요?
-            var t=text.toString()
-            if(t == "사진" || t == "동영상을 보냈습니다."){
-                return
-            }
-            //너무 긴 경우 무시
-            if(t.length >= 20){
-                t.substring(20)
-                t += "   이상입니다."
+           if(fromState.equals("ON"))  t+=title.toString()
+            t+="....."
+
+            if(text != null && contentState.equals("ON")){
+                // 카카오톡 방 내용
+                //TODO: 사진, 동영상, 파일 무시 필요?
+                t+=text.toString()
+                if(t == "사진" || t == "동영상을 보냈습니다."){
+                    return
+                }
+                //너무 긴 경우 무시
+                if(t.length >= 20){
+                    t.substring(20)
+                    t += "   이상입니다."
+                }
+
+
+
             }
 
+            if(timeState.equals("ON")) {
+                val sdf = SimpleDateFormat("HH시 MM분")
+                val postTime = sdf.format(sbn.postTime)
+                t+= "....."+postTime.toString()
+
+            }
             t+="....답장을 원하시면 내용을 말씀하세요"
-            speakTTS(t)
-            startSTT()
-
-
         }
+
+
+
+        speakTTS(t)
+
+
         //if(subText != null)speakTTS(subText.toString()) // "4개의 안읽은 메시지"
 
         //날짜
@@ -123,19 +140,17 @@ class NotificationListener : NotificationListenerService() {
         //if(postTime != null)speakTTS(postTime.toString())
 
     }
+    val speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+        putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+    }
 
+    var speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
     private  fun startSTT() {
-        while(tts?.isSpeaking == true){
-        }
-        val speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-        }
+        while(tts?.isSpeaking()==true){}
+     speechRecognizer.setRecognitionListener(recognitionListener())
+        speechRecognizer.startListening(speechRecognizerIntent)
 
-        var speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
-            setRecognitionListener(recognitionListener())
-            startListening(speechRecognizerIntent)
-        }
 
     }
 
@@ -265,44 +280,26 @@ class NotificationListener : NotificationListenerService() {
     private fun initTextToSpeech() {
         tts = TextToSpeech(this) {
             if (it == TextToSpeech.SUCCESS) {
-
                 val result = tts?.setLanguage(Locale.KOREA)
                 if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                     Toast.makeText(this, "language not supported", Toast.LENGTH_SHORT).show()
                     return@TextToSpeech
                 }
-
-
             }
-
-
         }
-
-
-        //TODO: change TTS Engine
-        //https://stackoverflow.com/questions/7362534/how-to-programmatically-change-tts-default-engine
-        //List<TextToSpeech.EngineInfo> engineInfoList = textToSpeech.getEngines()
-        //.setEngineByPackageName deprecated
-        //public TextToSpeech (Context context,
-        //                TextToSpeech.OnInitListener listener,
-        //                String engine)
-        //TODO: application onCreated할때 list를 spinner에 넣어줘야 함
-        //      선택시 set Engine
-        val engineList : List<TextToSpeech.EngineInfo> = tts!!.engines
-        Log.i("NotificationListener", "Engine: $engineList")
-//        EngineInfo{name=com.samsung.SMT}
-//        EngineInfo{name=com.google.android.tts}
-
-
     }
 
     private fun speakTTS(string:String){
+        speechRecognizer.stopListening()
         if(string == null || string == ""){
             Log.i("NotificationListener", "speakTTS:null")
             return
         }
         tts?.speak(string,TextToSpeech.QUEUE_ADD,null,null)
+        startSTT()
+
     }
+
 
     //https://www.tutorialkart.com/kotlin-android/android-text-to-speech-kotlin-example/
     override fun onDestroy() {
