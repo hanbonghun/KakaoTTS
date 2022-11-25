@@ -1,6 +1,7 @@
 package com.example.cd2
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
 import android.app.NotificationManager
 import android.bluetooth.BluetoothAdapter
@@ -9,19 +10,30 @@ import android.bluetooth.BluetoothHeadset
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile.GATT
 import android.content.*
+import android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
 import android.content.SharedPreferences.Editor
 import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.widget.*
 import android.widget.SeekBar.OnSeekBarChangeListener
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.kakao.sdk.auth.AuthApiClient
+import com.kakao.sdk.auth.model.OAuthToken
 import com.kakao.sdk.common.KakaoSdk
+import com.kakao.sdk.common.model.ClientError
+import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.common.util.Utility
+import com.kakao.sdk.share.ShareClient
+import com.kakao.sdk.talk.TalkApiClient
+import com.kakao.sdk.template.model.Link
+import com.kakao.sdk.template.model.TextTemplate
+import com.kakao.sdk.user.UserApiClient
 import java.lang.reflect.Method
 
 
@@ -29,18 +41,13 @@ class MainActivity : AppCompatActivity() {
 
     var speedRate: Float = 1.0F
 
-    // SharedPreference : 스토리지 파일에 key-value쌍으로 저장하여 다른 액티비티에서도 사용할 수 있음
-    //블루투스 리시버
-    //http://jinyongjeong.github.io/2018/09/27/bluetoothpairing/
-    //https://jung-max.github.io/2019/08/27/Android-Bluetooth/
-
-
+    //볼륨 변화 Receiver
     private val volumeChangeReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(contxt: Context?, intent: Intent?) {
             val volumeSeekBar: SeekBar = findViewById(R.id.volumeSeeBar)
 
-            var action = intent?.action //입력된 action
+            var action = intent?.action
 
             if (action.equals("android.media.VOLUME_CHANGED_ACTION")) {
                 val audio = getSystemService(AppCompatActivity.AUDIO_SERVICE) as AudioManager
@@ -50,15 +57,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    //FIXME : 블루투스 기기 연결된 상태로 앱 켰을 때 출력 안되는 것 수정해야함
+    //블루투스 상태 변화 Receiver
     private val bluetoothChangeReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(contxt: Context?, intent: Intent?) {
             val bleOnOffBtn: ToggleButton = findViewById(R.id.bluetooth_on_off_btn)
 
-            var action = intent?.action //입력된 action
+            var action = intent?.action
 
-            //블루투스 on/off 변화
+            //블루투스 on/off 여부
             if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
                 var state =
                     intent?.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
@@ -73,7 +80,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            //블루투스 연결 장치 변화
+            //블루투스 장치 연결/해제 여부
             if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
                 bleOnOffBtn.isChecked = true
 
@@ -81,13 +88,12 @@ class MainActivity : AppCompatActivity() {
                     intent?.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE) //연결된 장치
                 var bleDeviceTextView: TextView = findViewById(R.id.connectedDevice)
 
+                if(Build.VERSION.SDK_INT>30){
                 if (ActivityCompat.checkSelfPermission(
                         this@MainActivity,
                         Manifest.permission.BLUETOOTH_CONNECT
                     ) != PackageManager.PERMISSION_GRANTED
                 ) {
-                    // TODO: Consider calling
-                    //       ActivityCompat#requestPermissions
                     ActivityCompat.requestPermissions(
                         this@MainActivity,
                         arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
@@ -95,9 +101,9 @@ class MainActivity : AppCompatActivity() {
                     )
                     return
                 }
+                }
                 if (device != null) {
                     bleDeviceTextView.text = device.name
-                    //bleDeviceTextView.text = device.name
 
                     Toast.makeText(
                         baseContext,
@@ -118,7 +124,6 @@ class MainActivity : AppCompatActivity() {
                 device.createBond()
 
             } else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
-                bleOnOffBtn.isChecked = false
                 var bleDeviceTextView: TextView = findViewById(R.id.connectedDevice)
 
                 bleDeviceTextView.text = ""
@@ -133,16 +138,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        class GlobalApplication : Application() {
-            override fun onCreate() {
-                super.onCreate()
-                // 다른 초기화 코드들
 
-                // Kakao SDK 초기화
-                KakaoSdk.init(this, "c6665fea06ab37e4e6400f7df2bfe9c0")
-            }
-        }
+    @SuppressLint("MissingInflatedId")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        Log.i("빌드 버전: ", Build.VERSION.SDK_INT.toString())
 
         var keyHash = Utility.getKeyHash(this)
         super.onCreate(savedInstanceState)
@@ -162,8 +161,7 @@ class MainActivity : AppCompatActivity() {
 
         editor.commit() //commit 까지해야 반영
 
-        val audioManager =
-            this.applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val audioManager = this.applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         var currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)  //현재 음량
         var maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
 
@@ -171,6 +169,31 @@ class MainActivity : AppCompatActivity() {
         var fromOnOff: Switch = findViewById(R.id.from_on_off)
         var timeOnOff: Switch = findViewById(R.id.time_on_off)
         var contentOnOff: Switch = findViewById(R.id.content_on_off)
+
+        var testBtn : Button = findViewById(R.id.test)
+        testBtn.setOnClickListener{
+            onclickTestBtn()
+        }
+
+        fun onCheckedChangedListenerForPreferenceKey(switch  :Switch,type:String){
+            switch.setOnCheckedChangeListener{ buttonView, isChecked->
+                if (isChecked) {
+                    Log.i("스위치: "+type+" " ,"on")
+                    editor.putString(type, "ON")
+                } else {
+                    Log.i("스위치: "+type+" " ,"off")
+                    editor.putString(type, "OFF")
+                }
+                editor.commit()
+            }
+        }
+
+        listOf(
+            funcOnOff to "func",
+            fromOnOff to "from",
+            timeOnOff to "time",
+            contentOnOff to "content"
+        ).forEach{(switch, type)-> onCheckedChangedListenerForPreferenceKey(switch,type)}
 
 
         val volumeSeekBar: SeekBar = findViewById(R.id.volumeSeeBar)
@@ -189,50 +212,6 @@ class MainActivity : AppCompatActivity() {
             addAction("android.media.VOLUME_CHANGED_ACTION")
         }
 
-        //TODO:
-        //TODO: 반복 제거
-        funcOnOff.setOnCheckedChangeListener { buttonView, isChecked ->
-            if (isChecked) {
-                System.out.println("스위치 on")
-                editor.putString("func", "ON")
-            } else {
-                System.out.println("스위치 off")
-                editor.putString("func", "OFF")
-            }
-            editor.commit()
-        }
-        fromOnOff.setOnCheckedChangeListener { buttonView, isChecked ->
-            if (isChecked) {
-                System.out.println("스위치 on")
-                editor.putString("from", "ON")
-            } else {
-                System.out.println("스위치 off")
-                editor.putString("from", "OFF")
-            }
-            editor.commit()
-        }
-        timeOnOff.setOnCheckedChangeListener { buttonView, isChecked ->
-            if (isChecked) {
-                System.out.println("스위치 on")
-                editor.putString("time", "ON")
-            } else {
-                System.out.println("스위치 off")
-                editor.putString("time", "OFF")
-            }
-            editor.commit()
-        }
-        contentOnOff.setOnCheckedChangeListener { buttonView, isChecked ->
-            if (isChecked) {
-                System.out.println("스위치 on")
-                editor.putString("content", "ON")
-            } else {
-                System.out.println("스위치 off")
-                editor.putString("content", "OFF")
-            }
-            editor.commit()
-        }
-
-
         volumeSeekBar.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, i, 0)
@@ -242,38 +221,14 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar) {}
         })
 
-
-        registerReceiver(bluetoothChangeReceiver, bluetoothFilter)//reiver와 filter연결
+        registerReceiver(bluetoothChangeReceiver, bluetoothFilter)//receiver와 filter연결
         registerReceiver(volumeChangeReceiver, volumeFilter)
-
 
         //https://www.geeksforgeeks.org/spinner-in-kotlin/
         initSpeedRateSpinner(editor)
-
-        val manager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
-        val connected = manager.getConnectedDevices(GATT)
-        System.out.println("Connected Devices" + connected)
-        System.out.println("Connected Devices: " + connected.size.toString() + "")
-
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.BLUETOOTH_CONNECT
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return
-        }
-
-
     }
 
-
+    //읽기 속도 설정 spinner
     private fun initSpeedRateSpinner(editor: Editor) {
         val speedList: Array<Float> = arrayOf(1.0F, 1.5F, 2.0F)
         val speedRateSpinner = findViewById<Spinner>(R.id.spinner)
@@ -314,6 +269,47 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
         startActivity(intent) // 블루투스 연결 설정 화면으로 이동
     }
+    val text = TextTemplate(
+        text = "테스트",
+        link = Link(
+            webUrl = "https://developers.kakao.com",
+            mobileWebUrl = "https://developers.kakao.com"
+        )
+    )
+    fun onclickTestBtn(){
+        TalkApiClient.instance.friends { friends, error ->
+            if (error != null) {
+                Log.e(ContentValues.TAG, "카카오톡 친구 목록 가져오기 실패", error)
+            }
+            else {
+                Log.d(ContentValues.TAG, "카카오톡 친구 목록 가져오기 성공 \n${friends!!.elements?.joinToString("\n")}")
+                    System.out.println(friends.elements)
+                if (friends.elements?.isEmpty() == true) {
+                    Log.e(ContentValues.TAG, "메시지를 보낼 수  있는 친구가 없습니다")
+                }
+                else {
+                    System.out.println("친구목록:"+ friends.elements);
+                    var receiverUuid = friends.elements?.get(0)?.uuid
+                    var receiverUuids: List<String> = listOf(receiverUuid) as List<String>
+                    var template =text
+
+                    TalkApiClient.instance.sendDefaultMessage(receiverUuids, template) { result, error ->
+                        if (error != null) {
+                            Log.e(ContentValues.TAG, "메시지 보내기 실패", error)
+                        }
+                        else if (result != null) {
+                            Log.i(ContentValues.TAG, "메시지 보내기 성공 ${result.successfulReceiverUuids}")
+
+                            if (result.failureInfos != null) {
+                                Log.d(ContentValues.TAG, "메시지 보내기에 일부 성공했으나, 일부 대상에게는 실패 \n${result.failureInfos}")
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+    }
 
     //TODO: 한번켜지면 꺼지지 않음
     //알림 설정 버튼 클릭 시
@@ -337,53 +333,52 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+    }
+
+    override fun onBackPressed() {
+        var intent = Intent( this, MainActivity::class.java)
+        startActivity(intent)
+        super.onBackPressed()
+    }
+
     override fun onStart() {
+
         val bleOnOffBtn: ToggleButton = findViewById(R.id.bluetooth_on_off_btn)
-
-
+        if (!AuthApiClient.instance.hasToken()) {kakaoLogin()}
         super.onStart()
-        val notificationManager =
-            this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+//        val notificationManager =
+//            this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-
+        var bluetoothDevices:Set<BluetoothDevice>
         var bleDeviceTextView: TextView = findViewById(R.id.connectedDevice)
+        if(Build.VERSION.SDK_INT<=30) {  bluetoothDevices = mBluetoothAdapter.bondedDevices}
+        else {
+             bluetoothDevices = if (ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return
+            } else {
+                mBluetoothAdapter.bondedDevices
+            }
+        }
 
-        val bluetoothDevices = mBluetoothAdapter.bondedDevices
         for(b in bluetoothDevices) {
             if(isConnected(b)){
                 bleDeviceTextView.text = b.name
             }
         }
 
-        //https://kobbi-reply.tistory.com/17
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (!notificationManager.isNotificationPolicyAccessGranted) { //알림 접근 권한이 허용 여부 확인
-                val intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                this.startActivity(intent)
-            } else {
-                //request permission 은 오직 한 번만
-                if (ActivityCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.READ_SMS
-                    ) == PackageManager.PERMISSION_DENIED || ActivityCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.BLUETOOTH_CONNECT
-                    ) == PackageManager.PERMISSION_DENIED
-                ) {
-                    // Request the user to grant permission to read SMS messages
-                    ActivityCompat.requestPermissions(
-                        this,
-                        arrayOf(
-                            Manifest.permission.READ_SMS,
-                            Manifest.permission.BLUETOOTH_CONNECT,
-                            Manifest.permission.RECORD_AUDIO
-                        ),
-                        2
-                    )
-                }
-
-            }
-        }
 
         bleOnOffBtn.isChecked = isBluetoothEnabled()
         val device: BluetoothDevice? =
@@ -399,6 +394,18 @@ class MainActivity : AppCompatActivity() {
         volumeSeekBar.max = maxVolume
         volumeSeekBar.progress = currentVolume
 
+    }
+
+    fun kakaoLogin(){
+        UserApiClient.instance.loginWithKakaoAccount(this, callback = callback)
+
+    }
+    val callback: (OAuthToken?, Throwable?) -> Unit = { token, error ->
+        if (error != null) {
+            Log.e(ContentValues.TAG, "카카오계정으로 로그인 실패", error)
+        } else if (token != null) {
+            Log.i(ContentValues.TAG, "카카오계정으로 로그인 성공 ${token.accessToken}")
+        }
     }
 
 }

@@ -2,7 +2,6 @@ package com.example.cd2
 
 import android.app.Notification
 import android.content.ContentValues.TAG
-import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -17,8 +16,9 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import android.widget.Toast
-import com.kakao.sdk.common.KakaoSdk
-import com.kakao.sdk.share.ShareClient
+import com.kakao.sdk.auth.model.OAuthToken
+import com.kakao.sdk.common.model.ClientError
+import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.talk.TalkApiClient
 import com.kakao.sdk.template.model.*
 import com.kakao.sdk.user.UserApiClient
@@ -29,13 +29,23 @@ import java.util.*
 class NotificationListener : NotificationListenerService() {
 
     private var tts: TextToSpeech? =null
+    lateinit var speechRecognizer:SpeechRecognizer
     var sharedPreference: SharedPreferences? = null
     var STTResult :String =""
+    var receiver :String=""
+
     override fun onCreate() {
         super.onCreate()
         sharedPreference = getSharedPreferences("userSetting", MODE_PRIVATE);
 
+        val speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        }
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+        speechRecognizer.setRecognitionListener(recognitionListener())
     }
+
     override fun onListenerConnected() {
         super.onListenerConnected()
         initTextToSpeech()
@@ -58,15 +68,27 @@ class NotificationListener : NotificationListenerService() {
         val contentState = sharedPreference?.getString("content","none")
         val speedRate = sharedPreference?.getFloat("speed",1.0F)
 
+        if (title != null) {
+            receiver = title
+        }
         if(funcState == "OFF") {
-            System.out.println("기능 사용 꺼져있음, 음성 출력 x ")
+            Log.i("기능 사용 여부", "기능 사용 꺼져 있음, 음성 출력 x")
             return
         }
 
-        System.out.println("기능" +funcState)
-        System.out.println("발신자"+fromState)
-        System.out.println("타임"+timeState)
-        System.out.println("컨텐츠"+contentState)
+
+        if (funcState != null) {
+            Log.i("기능: " ,funcState)
+        }
+        if (fromState != null) {
+            Log.i("발신자: ",fromState)
+        }
+        if (timeState != null) {
+            Log.i("시간: ",timeState)
+        }
+        if (contentState != null) {
+            Log.i("내용: ",contentState)
+        }
 
         Log.i("NotificationListener", " onNotificationPosted() - $sbn")
         Log.i("NotificationListener", " PackageName:" + sbn.packageName)
@@ -82,12 +104,11 @@ class NotificationListener : NotificationListenerService() {
         //TODO: 목소리 종류? https://stackoverflow.com/questions/9815245/android-text-to-speech-male-voice
 
         //모든 notification을 잡기 때문에 필요한 것만 구분해야함
-        if(sbn.packageName != "com.kakao.talk" && sbn.packageName.indexOf("messaging") == -1) return
+        if(sbn.packageName != "com.kakao.talk" || sbn.packageName.indexOf("messaging") == -1) return
 
-        //TODO: application의 speedRate와 연결하기
         if (speedRate != null) {
             tts?.setSpeechRate(speedRate)
-        }//1.0기본 float
+        }
 
         var t =""
         if(title != null){
@@ -127,9 +148,7 @@ class NotificationListener : NotificationListenerService() {
         }
 
 
-
         speakTTS(t)
-
 
         //if(subText != null)speakTTS(subText.toString()) // "4개의 안읽은 메시지"
 
@@ -140,40 +159,30 @@ class NotificationListener : NotificationListenerService() {
         //if(postTime != null)speakTTS(postTime.toString())
 
     }
-    val speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-        putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-    }
 
-    var speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
     private  fun startSTT() {
-        while(tts?.isSpeaking()==true){}
-     speechRecognizer.setRecognitionListener(recognitionListener())
-        speechRecognizer.startListening(speechRecognizerIntent)
-
-
+        //https://stackoverflow.com/questions/52400852/how-to-start-speech-recognition-as-soon-the-text-to-speech-stops
+        val mainHandler = Handler(Looper.getMainLooper())
+        val myRunnable =
+            Runnable {
+                val speechRecognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                }
+                speechRecognizer.startListening(speechRecognizerIntent)
+            } // This is your code
+        mainHandler.post(myRunnable)
     }
 
     private fun recognitionListener() = object : RecognitionListener {
 
         override fun onReadyForSpeech(params: Bundle?) = Toast.makeText(this@NotificationListener, "음성인식 시작", Toast.LENGTH_SHORT).show()
-
         override fun onRmsChanged(rmsdB: Float) {}
-
         override fun onBufferReceived(buffer: ByteArray?) {}
-
         override fun onPartialResults(partialResults: Bundle?) {}
-
         override fun onEvent(eventType: Int, params: Bundle?) {}
-
-        override fun onBeginningOfSpeech() {
-
-        }
-
-        override fun onEndOfSpeech() {
-
-        }
-
+        override fun onBeginningOfSpeech() {}
+        override fun onEndOfSpeech() {}
         override fun onError(error: Int) {
             when(error) {
                 SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> Toast.makeText(this@NotificationListener, "퍼미션 없음", Toast.LENGTH_SHORT).show()
@@ -181,7 +190,6 @@ class NotificationListener : NotificationListenerService() {
         }
 
         override fun onResults(results: Bundle) {
-
 
             Toast.makeText(this@NotificationListener, results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)!![0], Toast.LENGTH_SHORT).show()
             STTResult =results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)!![0]
@@ -195,23 +203,6 @@ class NotificationListener : NotificationListenerService() {
                 )
             )
 
-//            if (ShareClient.instance.isKakaoTalkSharingAvailable(this@NotificationListener)) {
-//                // 카카오톡으로 카카오톡 공유 가능
-//                ShareClient.instance.shareDefault(this@NotificationListener, text) { sharingResult, error ->
-//                    if (error != null) {
-//                        Log.e(TAG, "카카오톡 공유 실패", error)
-//                    }
-//                    else if (sharingResult != null) {
-//
-//                        Log.d(TAG, "카카오톡 공유 성공 ${sharingResult.intent}")
-//                        startActivity(sharingResult.intent)
-//
-//                        // 카카오톡 공유에 성공했지만 아래 경고 메시지가 존재할 경우 일부 컨텐츠가 정상 동작하지 않을 수 있습니다.
-//                        Log.w(TAG, "Warning Msg: ${sharingResult.warningMsg}")
-//                        Log.w(TAG, "Argument Msg: ${sharingResult.argumentMsg}")
-//                    }
-//                }
-//            }
             TalkApiClient.instance.friends { friends, error ->
                 if (error != null) {
                     Log.e(TAG, "카카오톡 친구 목록 가져오기 실패", error)
@@ -223,54 +214,28 @@ class NotificationListener : NotificationListenerService() {
                         Log.e(TAG, "메시지를 보낼 수 있는 친구가 없습니다")
                     }
                     else {
-                        System.out.println(friends.elements);
-                        var receiverUuid = friends.elements?.get(0)?.uuid
-                        var receiverUuids: List<String> = listOf(receiverUuid) as List<String>
-                        var template =text
+                        Log.i("친구목록: ", friends.elements.toString())
+                        for(friend in friends.elements!!){
+                            if(receiver == friend.profileNickname){
+                                var receiverUuid = friend.uuid
+                                var receiverUuids: List<String> = listOf(receiverUuid) as List<String>
+                                var template =text
 
-                        TalkApiClient.instance.sendDefaultMessage(receiverUuids, template) { result, error ->
-                                if (error != null) {
-                                    Log.e(TAG, "메시지 보내기 실패", error)
-                                }
-                                else if (result != null) {
-                                    Log.i(TAG, "메시지 보내기 성공 ${result.successfulReceiverUuids}")
+                                TalkApiClient.instance.sendDefaultMessage(receiverUuids, template) { result, error ->
+                                    if (error != null) {
+                                        Log.e(TAG, "메시지 보내기 실패", error)
+                                    }
+                                    else if (result != null) {
+                                        Log.i(TAG, "메시지 보내기 성공 ${result.successfulReceiverUuids}")
 
-                                    if (result.failureInfos != null) {
-                                        Log.d(TAG, "메시지 보내기에 일부 성공했으나, 일부 대상에게는 실패 \n${result.failureInfos}")
+                                        if (result.failureInfos != null) {
+                                            Log.d(TAG, "메시지 보내기에 일부 성공했으나, 일부 대상에게는 실패 \n${result.failureInfos}")
+                                        }
                                     }
                                 }
                             }
+                        }
 
-                        // 서비스에 상황에 맞게 메시지 보낼 친구의 UUID를 가져오세요.
-                        // 이 예제에서는 친구 목록을 화면에 보여주고 체크박스로 선택된 친구들의 UUID 를 수집하도록 구현했습니다.
-//                        FriendsActivity.startForResult(
-//                            context,
-//                            friends.elements.map { PickerItem(it.uuid, it.profileNickname, it.profileThumbnailImage) }
-//                        ) { selectedItems ->
-//                            if (selectedItems.isEmpty()) return@startForResult
-//                            Log.d(TAG, "선택된 친구:\n${selectedItems.joinToString("\n")}")
-//
-//
-//                            // 메시지 보낼 친구의 UUID 목록
-//                            val receiverUuids = selectedItems
-//
-//                            // Feed 메시지
-//                            val template = defaultFeed
-//
-//                            // 메시지 보내기
-//                            TalkApiClient.instance.sendDefaultMessage(receiverUuids, template) { result, error ->
-//                                if (error != null) {
-//                                    Log.e(TAG, "메시지 보내기 실패", error)
-//                                }
-//                                else if (result != null) {
-//                                    Log.i(TAG, "메시지 보내기 성공 ${result.successfulReceiverUuids}")
-//
-//                                    if (result.failureInfos != null) {
-//                                        Log.d(TAG, "메시지 보내기에 일부 성공했으나, 일부 대상에게는 실패 \n${result.failureInfos}")
-//                                    }
-//                                }
-//                            }
-//                        }
                     }
                 }
             }
@@ -280,24 +245,38 @@ class NotificationListener : NotificationListenerService() {
     private fun initTextToSpeech() {
         tts = TextToSpeech(this) {
             if (it == TextToSpeech.SUCCESS) {
+
                 val result = tts?.setLanguage(Locale.KOREA)
                 if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                     Toast.makeText(this, "language not supported", Toast.LENGTH_SHORT).show()
                     return@TextToSpeech
                 }
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onDone(utteranceId: String) {
+                        startSTT()
+                    }
+                    override fun onError(utteranceId: String) {}
+                    override fun onStart(utteranceId: String) {
+                        val mainHandler = Handler(Looper.getMainLooper())
+                        val myRunnable =
+                            Runnable {
+                                speechRecognizer.stopListening()
+                            } // This is your code
+                        mainHandler.post(myRunnable)
+
+                    }
+                })
             }
         }
+
     }
 
     private fun speakTTS(string:String){
-        speechRecognizer.stopListening()
         if(string == null || string == ""){
             Log.i("NotificationListener", "speakTTS:null")
             return
         }
-        tts?.speak(string,TextToSpeech.QUEUE_ADD,null,null)
-        startSTT()
-
+        tts?.speak(string,TextToSpeech.QUEUE_ADD,null,"test")
     }
 
 
@@ -309,42 +288,5 @@ class NotificationListener : NotificationListenerService() {
         }
         super.onDestroy()
     }
-//    2022-10-09 09:45:50.819 2790-2790/com.example.cd2 I/NotificationListener: Sub Text:null
-//    2022-10-09 09:45:53.098 2877-10286/? D/androidtc: Initializing SystemTextClassifier, type = System
-//    2022-10-09 09:45:53.299 3126-3361/? I/Launcher.NotificationListener: notificationIsValidForUI : com.kakao.talk missingTitleAndText : true isGroupHeader : true
-//    2022-10-09 09:45:53.307 2790-2790/com.example.cd2 I/NotificationListener:  Text:null
-//    2022-10-09 09:45:53.307 2790-2790/com.example.cd2 I/NotificationListener: Sub Text:1개의 안 읽은 메시지
-//    2022-10-09 09:45:53.326 3126-3361/? I/Launcher.NotificationListener: notificationIsValidForUI : com.kakao.talk missingTitleAndText : false isGroupHeader : false
-//    2022-10-09 09:45:53.336 2790-2790/com.example.cd2 I/NotificationListener:  Text:,ㅇㅇ
-//    2022-10-09 09:45:53.336 2790-2790/com.example.cd2 I/NotificationListener: Sub Text:null
 
-//    onNotificationPosted : com.kakao.talk number : 0
-//    2022-10-09 19:14:27.147  3126-3361  Launcher.N...onListener pid-3126                             I  notificationIsValidForUI : com.kakao.talk missingTitleAndText : true isGroupHeader : true
-//    2022-10-09 19:14:27.159 24798-24798 NotificationListener    com.example.cd2                      I   onNotificationPosted() - StatusBarNotification(pkg=com.kakao.talk user=UserHandle{0} id=1 tag=null key=0|com.kakao.talk|1|null|10317: Notification(channel=quiet_new_message shortcut=null contentView=null vibrate=null sound=null defaults=0x0 flags=0x200 color=0xff4d3e36 category=msg groupKey=chat_message vis=PRIVATE semFlags=0x0 semPriority=0 semMissedCount=0))
-//    2022-10-09 19:14:27.159 24798-24798 NotificationListener    com.example.cd2                      I   PackageName:com.kakao.talk
-//    2022-10-09 19:14:27.159 24798-24798 NotificationListener    com.example.cd2                      I   PostTime:1665310466929
-//    2022-10-09 19:14:27.160 24798-24798 NotificationListener    com.example.cd2                      I   Title:null
-//    2022-10-09 19:14:27.160 24798-24798 NotificationListener    com.example.cd2                      I   Text:null
-//    2022-10-09 19:14:27.161 24798-24798 NotificationListener    com.example.cd2                      I  Sub Text:3개의 안 읽은 메시지
-//    2022-10-09 19:14:27.161 24798-24798 NotificationListener    com.example.cd2                      I  Time:1665310466929
-//    2022-10-09 19:14:27.161 24798-24798 NotificationListener    com.example.cd2                      I  Time:UserHandle{0}
-//    2022-10-09 19:14:27.168  3126-3126  Launcher.N...onListener pid-3126                             I  onNotificationPosted : com.kakao.talk number : 3
-//    2022-10-09 19:14:27.169  3126-3361  Launcher.N...onListener pid-3126                             I  notificationIsValidForUI : com.kakao.talk missingTitleAndText : false isGroupHeader : false
-//    2022-10-09 19:14:27.195 24798-24798 NotificationListener    com.example.cd2                      I   onNotificationPosted() - StatusBarNotification(pkg=com.kakao.talk user=UserHandle{0} id=2 tag=100025487382719 key=0|com.kakao.talk|2|100025487382719|10317: Notification(channel=quiet_new_message shortcut=4729f6957d99d466eb0b05f552319a0531a64a8728eab27a73178a0624c85fde contentView=null vibrate=null sound=null tick defaults=0x0 flags=0x10 color=0xff4d3e36 category=msg groupKey=chat_message sortKey=9223370371544309401 actions=2 vis=PRIVATE semFlags=0x0 semPriority=0 semMissedCount=0))
-//    2022-10-09 19:14:27.196 24798-24798 NotificationListener    com.example.cd2                      I   PackageName:com.kakao.talk
-//    2022-10-09 19:14:27.196 24798-24798 NotificationListener    com.example.cd2                      I   PostTime:1665310466942
-//    2022-10-09 19:14:27.196 24798-24798 NotificationListener    com.example.cd2                      I   Title:나
-//    2022-10-09 19:14:27.196 24798-24798 NotificationListener    com.example.cd2                      I   Text:Good Morning
-//    2022-10-09 19:14:27.196 24798-24798 NotificationListener    com.example.cd2                      I  Sub Text:null
-//    2022-10-09 19:14:27.196 24798-24798 NotificationListener    com.example.cd2                      I  Time:1665310466942
-//    2022-10-09 19:14:27.196 24798-24798 NotificationListener    com.example.cd2                      I  Time:UserHandle{0}
-
-//    onNotificationPosted() - StatusBarNotification(pkg=com.samsung.android.messaging user=UserHandle{0} id=123 tag=com.samsung.android.messaging:MESSAGE_RECEIVED:176 key=0|com.samsung.android.messaging|123|com.samsung.android.messaging:MESSAGE_RECEIVED:176|10125: Notification(channel=CHANNEL_ID_SMS_MMS shortcut=7f8701ab82378d31 contentView=null vibrate=null sound=null tick defaults=0x0 flags=0x10 color=0xff3e91ff category=msg groupKey=MESSAGE_RECEIVED sortKey=9223370371543499140 actions=3 vis=PRIVATE semFlags=0x2008 semPriority=0 semMissedCount=1))
-//    2022-10-09 19:27:57.807 25415-25415 NotificationListener    com.example.cd2                      I   PackageName:com.samsung.android.messaging
-//    2022-10-09 19:27:57.807 25415-25415 NotificationListener    com.example.cd2                      I   PostTime:1665311277505
-//    2022-10-09 19:27:57.807 25415-25415 NotificationListener    com.example.cd2                      I   Title:⁨나⁩
-//    2022-10-09 19:27:57.807 25415-25415 NotificationListener    com.example.cd2                      I   Text:집
-//    2022-10-09 19:27:57.808 25415-25415 NotificationListener    com.example.cd2                      I  Sub Text:null
-//    2022-10-09 19:27:57.808 25415-25415 NotificationListener    com.example.cd2                      I  Time:1665311277505
-//    2022-10-09 19:27:57.808 25415-25415 NotificationListener    com.example.cd2                      I  Time:UserHandle{0}
 }
