@@ -126,5 +126,8 @@ https://user-images.githubusercontent.com/33712528/205492862-71103fcb-c6a5-495a-
 
 https://user-images.githubusercontent.com/33712528/205492865-30645782-1bc8-4974-a280-30641b2465b6.mp4
 
+## 역할 분담 및 기여도 
+![image](https://user-images.githubusercontent.com/33712528/205516761-5aa2d6e3-0003-4799-95ac-a347f33d9dca.png)
+
 
 
