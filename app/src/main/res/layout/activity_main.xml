@@ -28,21 +28,15 @@
             android:layout_height="wrap_content"
             android:gravity="center_horizontal"
             />
-        <!--//android:onClick="onClickCustomButton"-->
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:gravity="center_horizontal">
 
         <Button
             android:id="@+id/setting_button"
             android:layout_width="50dp"
             android:layout_height="50dp"
+            android:layout_marginTop="50dp"
             android:background="@drawable/cog_wheel_icon"
             android:onClick="onClickSettingButton" />
+        <!--//android:onClick="onClickCustomButton"-->
     </LinearLayout>
 
 </LinearLayout>
