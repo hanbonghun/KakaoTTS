@@ -2,15 +2,9 @@ package com.example.cd2
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Application
-import android.app.NotificationManager
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothHeadset
-import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothProfile.GATT
 import android.content.*
-import android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
 import android.content.SharedPreferences.Editor
 import android.content.pm.PackageManager
 import android.media.AudioManager
@@ -25,19 +19,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.kakao.sdk.auth.AuthApiClient
 import com.kakao.sdk.auth.model.OAuthToken
-import com.kakao.sdk.common.KakaoSdk
-import com.kakao.sdk.common.model.ClientError
-import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.common.util.Utility
-import com.kakao.sdk.share.ShareClient
-import com.kakao.sdk.talk.TalkApiClient
 import com.kakao.sdk.template.model.Link
 import com.kakao.sdk.template.model.TextTemplate
 import com.kakao.sdk.user.UserApiClient
 import java.lang.reflect.Method
 
 
-class MainActivity : AppCompatActivity() {
+class OptionActivity : AppCompatActivity() {
 
     var speedRate: Float = 1.0F
 
@@ -90,12 +79,12 @@ class MainActivity : AppCompatActivity() {
 
                 if(Build.VERSION.SDK_INT>30){
                 if (ActivityCompat.checkSelfPermission(
-                        this@MainActivity,
+                        this@OptionActivity,
                         Manifest.permission.BLUETOOTH_CONNECT
                     ) != PackageManager.PERMISSION_GRANTED
                 ) {
                     ActivityCompat.requestPermissions(
-                        this@MainActivity,
+                        this@OptionActivity,
                         arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
                         1
                     )
@@ -145,14 +134,15 @@ class MainActivity : AppCompatActivity() {
 
         var keyHash = Utility.getKeyHash(this)
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_option)
 
         // SharedPreference : 스토리지 파일에 key-value쌍으로 저장하여 다른 액티비티에서도 사용할 수 있음
         val sharedPreference =
             getSharedPreferences("userSetting", MODE_PRIVATE) //기능 사용 on off 를 위한 변수
         val editor = sharedPreference.edit() // SharedPreference 수정을 위한 변수
 
-        editor.putString("func", "ON") // 최초 기능 사용 on 으로 설정
+
+        //editor.putString("func", "ON") // 최초 기능 사용 on 으로 설정
         editor.putString("from", "ON") // 발신자 on 으로 설정
         editor.putString("time", "ON") // 시간 on 으로 설정
         editor.putString("content", "ON") // 내용 on 으로 설정
@@ -165,12 +155,21 @@ class MainActivity : AppCompatActivity() {
         var currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)  //현재 음량
         var maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
 
+        val funcState = sharedPreference?.getString("func","ON")
         var funcOnOff: Switch = findViewById(R.id.func_on_off)
+        funcOnOff.isChecked = funcState == "ON"
+        funcOnOff.setOnCheckedChangeListener { buttonView, isChecked ->
+            val s = if(isChecked) "ON" else "OFF"
+            editor.putString("func",s)
+            editor.commit()
+        }
+
+
         var fromOnOff: Switch = findViewById(R.id.from_on_off)
         var timeOnOff: Switch = findViewById(R.id.time_on_off)
         var contentOnOff: Switch = findViewById(R.id.content_on_off)
 
-        var testBtn : Button = findViewById(R.id.test)
+        var testBtn : Button = findViewById(R.id.Home)
         testBtn.setOnClickListener{
             onclickTestBtn()
         }
@@ -277,7 +276,7 @@ class MainActivity : AppCompatActivity() {
         )
     )
     fun onclickTestBtn(){
-        TalkApiClient.instance.friends { friends, error ->
+        /*TalkApiClient.instance.friends { friends, error ->
             if (error != null) {
                 Log.e(ContentValues.TAG, "카카오톡 친구 목록 가져오기 실패", error)
             }
@@ -308,7 +307,9 @@ class MainActivity : AppCompatActivity() {
 
                 }
             }
-        }
+        }*/
+        var intent = Intent( this, MainActivity::class.java)
+        startActivity(intent)
     }
 
     //TODO: 한번켜지면 꺼지지 않음
@@ -338,7 +339,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        var intent = Intent( this, MainActivity::class.java)
+        var intent = Intent( this, OptionActivity::class.java)
         startActivity(intent)
         super.onBackPressed()
     }

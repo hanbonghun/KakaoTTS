@@ -5,12 +5,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#ffffff"
-    tools:context=".MainActivity">
+    tools:context=".OptionActivity">
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_width="413dp"
+        android:layout_height="733dp"
+        android:orientation="vertical"
+        tools:layout_editor_absoluteX="-2dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -21,8 +22,13 @@
                 android:id="@+id/textView3"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_margin="3dp"
                 android:background="#00BCD4"
-                android:text="기능 사용" />
+                android:padding="5dp"
+                android:text="기능 사용"
+                android:textAlignment="center"
+                android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                android:textSize="18dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -33,9 +39,11 @@
                     android:id="@+id/textView4"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_margin="3dp"
                     android:layout_weight="1"
                     android:text="기능 사용하기"
-                    android:textColor="#000000" />
+                    android:textColor="#000000"
+                    android:textSize="18dp" />
 
                 <Switch
                     android:id="@+id/func_on_off"
@@ -58,6 +66,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_margin="3dp"
                 android:background="#00BCD4"
                 android:orientation="horizontal">
 
@@ -66,15 +75,20 @@
                     android:layout_width="203dp"
                     android:layout_height="wrap_content"
                     android:background="#00BCD4"
-                    android:text="알림 안내 권한" />
+                    android:text="알림 안내 권한"
+                    android:textAlignment="center"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                    android:textSize="18dp" />
 
                 <Button
                     android:id="@+id/noti_setting"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:backgroundTint="@android:color/darker_gray"
                     android:onClick="onClickNotiSettingBtn"
-                    android:text="설정" />
+                    android:text="설정"
+                    android:textColor="@android:color/white" />
 
             </LinearLayout>
 
@@ -87,15 +101,18 @@
                     android:id="@+id/textView7"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_margin="3dp"
                     android:layout_weight="1"
                     android:text="권한 허용 여부"
-                    android:textColor="#000000" />
+                    android:textColor="#000000"
+                    android:textSize="18dp" />
 
                 <Switch
                     android:id="@+id/switch2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:checked="true"
                     android:textColor="#000000" />
             </LinearLayout>
 
@@ -109,6 +126,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_margin="3dp"
                 android:background="#00BCD4"
                 android:orientation="horizontal">
 
@@ -117,15 +135,20 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="블루투스 연결" />
+                    android:text="블루투스 연결"
+                    android:textAlignment="center"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                    android:textSize="18dp" />
 
                 <Button
                     android:id="@+id/bluetooth_connect_btn"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:backgroundTint="@android:color/darker_gray"
                     android:onClick="onClickBluetoothBtn"
-                    android:text="설정" />
+                    android:text="설정"
+                    android:textColor="@android:color/white" />
             </LinearLayout>
 
             <LinearLayout
@@ -137,18 +160,22 @@
                     android:id="@+id/textView10"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_margin="3dp"
                     android:layout_weight="1"
                     android:text="현재 상태"
-                    android:textColor="#000000" />
+                    android:textColor="#000000"
+                    android:textSize="18dp" />
 
                 <ToggleButton
                     android:id="@+id/bluetooth_on_off_btn"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:backgroundTint="@android:color/darker_gray"
+                    android:backgroundTintMode="multiply"
                     android:enabled="false"
                     android:text="ToggleButton"
-                    android:textColor="@color/black" />
+                    android:textColor="@android:color/white" />
 
             </LinearLayout>
 
@@ -161,9 +188,11 @@
                     android:id="@+id/textView11"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_margin="3dp"
                     android:layout_weight="1"
                     android:text="연결된 기기"
-                    android:textColor="#000000" />
+                    android:textColor="#000000"
+                    android:textSize="18dp" />
 
                 <TextView
                     android:id="@+id/connectedDevice"
@@ -183,8 +212,13 @@
                 android:id="@+id/textView14"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_margin="3dp"
                 android:background="#00BCD4"
-                android:text="사운드 설정" />
+                android:padding="5dp"
+                android:text="사운드 설정"
+                android:textAlignment="center"
+                android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                android:textSize="18dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -195,9 +229,11 @@
                     android:id="@+id/textView15"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_margin="3dp"
                     android:layout_weight="1"
                     android:text="볼륨"
-                    android:textColor="#000000" />
+                    android:textColor="#000000"
+                    android:textSize="18dp" />
 
                 <SeekBar
                     android:id="@+id/volumeSeeBar"
@@ -217,9 +253,14 @@
                 android:id="@+id/textView17"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_margin="3dp"
                 android:layout_weight="1"
                 android:background="#00BCD4"
-                android:text="읽기 설정" />
+                android:padding="5dp"
+                android:text="읽기 설정"
+                android:textAlignment="center"
+                android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                android:textSize="18dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -230,15 +271,18 @@
                     android:id="@+id/textView16"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_margin="3dp"
                     android:layout_weight="1"
                     android:text="읽기 속도"
-                    android:textColor="#000000" />
+                    android:textColor="#000000"
+                    android:textSize="18dp" />
 
                 <Spinner
                     android:id="@+id/spinner"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1" />
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="#7FCAC3" />
             </LinearLayout>
 
         </LinearLayout>
@@ -252,8 +296,13 @@
                 android:id="@+id/textView19"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_margin="3dp"
                 android:background="#00BCD4"
-                android:text="알림 설정" />
+                android:padding="5dp"
+                android:text="알림 설정"
+                android:textAlignment="center"
+                android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                android:textSize="18dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -264,14 +313,17 @@
                     android:id="@+id/textView20"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_margin="3dp"
                     android:layout_weight="1"
                     android:text="수신 시 알림음 재생"
-                    android:textColor="#000000" />
+                    android:textColor="#000000"
+                    android:textSize="18dp" />
 
                 <Switch
                     android:id="@+id/switch3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:checked="false"
                     android:layout_weight="1" />
             </LinearLayout>
         </LinearLayout>
@@ -279,14 +331,20 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="40dp"
             android:orientation="vertical">
 
             <TextView
                 android:id="@+id/textView21"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_margin="3dp"
                 android:background="#00BCD4"
-                android:text="재생 텍스트 내용 설정" />
+                android:padding="5dp"
+                android:text="재생 텍스트 내용 설정"
+                android:textAlignment="center"
+                android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                android:textSize="18dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -297,18 +355,19 @@
                     android:id="@+id/textView22"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_margin="3dp"
                     android:layout_weight="1"
                     android:shadowColor="#000000"
                     android:text="발신자"
-                    android:textColor="#000000" />
+                    android:textColor="#000000"
+                    android:textSize="18dp" />
 
                 <Switch
                     android:id="@+id/from_on_off"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:checked="true"
-                    />
+                    android:checked="true" />
             </LinearLayout>
 
             <LinearLayout
@@ -320,17 +379,18 @@
                     android:id="@+id/textView23"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_margin="3dp"
                     android:layout_weight="1"
                     android:text="발신 내용"
-                    android:textColor="#000000" />
+                    android:textColor="#000000"
+                    android:textSize="18dp" />
 
                 <Switch
                     android:id="@+id/content_on_off"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:checked="true"
-                    />
+                    android:checked="true" />
             </LinearLayout>
 
             <LinearLayout
@@ -342,27 +402,33 @@
                     android:id="@+id/textView24"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_margin="3dp"
                     android:layout_weight="1"
                     android:text="발신 시간"
-                    android:textColor="#000000" />
+                    android:textColor="#000000"
+                    android:textSize="18dp" />
 
                 <Switch
                     android:id="@+id/time_on_off"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:checked="true"
-                    />
+                    android:checked="true" />
             </LinearLayout>
         </LinearLayout>
 
+        <Button
+            android:id="@+id/Home"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:background="@drawable/home_icon"
+            android:gravity="bottom"
+            android:onClick="onClickSettingButton" />
+
     </LinearLayout>
 
-    <Button
-        android:id="@+id/test"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Button"
-        tools:layout_editor_absoluteX="148dp"
-        tools:layout_editor_absoluteY="586dp" />
+
+    <!--tools:layout_editor_absoluteX="148dp"
+       tools:layout_editor_absoluteY="586dp"-->
 </androidx.constraintlayout.widget.ConstraintLayout>
