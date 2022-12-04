@@ -122,3 +122,9 @@ NotificationListenerService는 Notification에 대한 정보를 받을 수 있�
 
 ## 7. 시연영상
 
+https://user-images.githubusercontent.com/33712528/205492862-71103fcb-c6a5-495a-b1cd-c7234f538948.mp4
+
+https://user-images.githubusercontent.com/33712528/205492865-30645782-1bc8-4974-a280-30641b2465b6.mp4
+
+
+
