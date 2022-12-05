@@ -104,7 +104,7 @@ class NotificationListener : NotificationListenerService() {
         //TODO: 목소리 종류? https://stackoverflow.com/questions/9815245/android-text-to-speech-male-voice
 
         //모든 notification을 잡기 때문에 필요한 것만 구분해야함
-        if(sbn.packageName != "com.kakao.talk" || sbn.packageName.indexOf("messaging") == -1) return
+        if(sbn.packageName != "com.kakao.talk" && sbn.packageName.indexOf("messaging") == -1) return
 
         if (speedRate != null) {
             tts?.setSpeechRate(speedRate)
